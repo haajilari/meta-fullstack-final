@@ -1,8 +1,10 @@
+import json
 from datetime import datetime
 
-from django.contrib import messages
 from django.core import serializers
-from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 
 from .forms import BookingForm
 from .models import Booking, Menu
@@ -17,39 +19,43 @@ def about(request):
 
 
 def book(request):
-    if request.method == "POST":
-        form = BookingForm(request.POST)
-
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Your reservation was saved successfully.",
-            )
-            return redirect("bookings")
-    else:
-        form = BookingForm()
-
+    form = BookingForm()
     return render(request, "book.html", {"form": form})
 
 
+@csrf_exempt
 def bookings(request):
+    if request.method == "POST":
+        data = json.load(request)
+
+        exists = Booking.objects.filter(
+            reservation_date=data["reservation_date"],
+            reservation_slot=data["reservation_slot"],
+        ).exists()
+
+        if not exists:
+            booking = Booking(
+                first_name=data["first_name"],
+                reservation_date=data["reservation_date"],
+                reservation_slot=data["reservation_slot"],
+            )
+            booking.save()
+        else:
+            return HttpResponse(
+                '{"error": 1}',
+                content_type="application/json",
+            )
+
     date = request.GET.get("date", datetime.today().date())
-    booking_records = Booking.objects.all().order_by(
-        "reservation_date",
-        "reservation_slot",
-    )
+    booking_records = Booking.objects.filter(reservation_date=date)
     booking_json = serializers.serialize("json", booking_records)
 
-    return render(
-        request,
-        "bookings.html",
-        {
-            "bookings": booking_json,
-            "reservation_records": booking_records,
-            "date": date,
-        },
+    return HttpResponse(
+        booking_json,
+        content_type="application/json",
     )
+
+
 def menu(request):
     menu_data = Menu.objects.all()
     main_data = {"menu": menu_data}

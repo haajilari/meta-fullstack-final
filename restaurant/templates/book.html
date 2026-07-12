@@ -1,20 +1,38 @@
 {% extends 'base.html' %} {% load static %} {% block content %}
 <section>
   <article>
-    <!-- Add your code in the line below  -->
     <h1>Make a reservation</h1>
-    <!--Begin row-->
-    <div class="row">
-      <!--Begin col-->
-      <div class="column">
-        <form action="" method="post">
-          {% csrf_token %} {{form.as_p}}
-          <input type="submit" id="button" />
-        </form>
-      </div>
-      <!--End col-->
 
-      <!--Begin col-->
+    <div class="row">
+      <div class="column">
+        <form id="booking-form">
+          <p>
+            <label for="first_name">First name:</label>
+            <input type="text" id="first_name" name="first_name" required />
+          </p>
+
+          <p>
+            <label for="reservation_date">Reservation date:</label>
+            <input type="date" id="reservation_date" name="reservation_date" required />
+          </p>
+
+          <p>
+            <label for="reservation_slot">Reservation time:</label>
+            <select id="reservation_slot" name="reservation_slot" required>
+              <option value="0" disabled selected>Select time</option>
+            </select>
+          </p>
+
+          <button type="submit" id="button">Reserve Now</button>
+        </form>
+
+        <h2>Bookings</h2>
+        <div id="bookings"></div>
+
+        <h2>Bookings</h2>
+        <div id="bookings"></div>
+      </div>
+
       <div class="column">
         <div class="videowrap">
           <iframe
@@ -22,20 +40,116 @@
             width="600"
             height="450"
             style="border: 0"
-            allowfullscreen=""
+            allowfullscreen
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
+            title="Little Lemon location map"
           ></iframe>
         </div>
       </div>
-      <!--End col-->
     </div>
-    <!--End row-->
   </article>
 </section>
-<!-- Add your code inside the script tags below  -->
+
 <script>
-  console.log("Hello");
-  document.getElementById("id_reservation_date").type = "date";
+  const bookingForm = document.getElementById("booking-form");
+  const firstNameInput = document.getElementById("first_name");
+  const reservationDateInput = document.getElementById("reservation_date");
+  const reservationSlotInput = document.getElementById("reservation_slot");
+  const bookingsContainer = document.getElementById("bookings");
+
+  const today = new Date();
+  const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60 * 1000).toISOString().split("T")[0];
+
+  reservationDateInput.value = localToday;
+  reservationDateInput.min = localToday;
+
+  function formatTime(time) {
+    const hour = Number(time);
+    const period = hour < 12 ? "AM" : "PM";
+    const displayHour = hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:00 ${period}`;
+  }
+
+  async function getBookings() {
+    const selectedDate = reservationDateInput.value;
+    const response = await fetch(`/bookings/?date=${encodeURIComponent(selectedDate)}`);
+
+    if (!response.ok) {
+      bookingsContainer.innerHTML = "<p>Unable to load bookings.</p>";
+      return;
+    }
+
+    const data = await response.json();
+    const reservedSlots = [];
+    let bookingMarkup = "";
+
+    for (const item of data) {
+      console.log(item.fields);
+      reservedSlots.push(Number(item.fields.reservation_slot));
+      bookingMarkup += `
+        <p>
+          ${item.fields.first_name} -
+          ${formatTime(item.fields.reservation_slot)}
+        </p>
+      `;
+    }
+
+    bookingsContainer.innerHTML = bookingMarkup || "<p>No bookings for this date.</p>";
+
+    let slotOptions = '<option value="0" disabled selected>Select time</option>';
+
+    for (let i = 10; i < 20; i += 1) {
+      const label = formatTime(i);
+
+      if (reservedSlots.includes(i)) {
+        slotOptions += `
+          <option value="${i}" disabled>${label} — Reserved</option>
+        `;
+      } else {
+        slotOptions += `<option value="${i}">${label}</option>`;
+      }
+    }
+
+    reservationSlotInput.innerHTML = slotOptions;
+  }
+
+  reservationDateInput.addEventListener("change", getBookings);
+
+  bookingForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const payload = {
+      first_name: firstNameInput.value.trim(),
+      reservation_date: reservationDateInput.value,
+      reservation_slot: Number(reservationSlotInput.value),
+    };
+
+    if (!payload.first_name || !payload.reservation_date || payload.reservation_slot < 10 || payload.reservation_slot > 19) {
+      alert("Please enter your name, date, and an available time.");
+      return;
+    }
+
+    const response = await fetch("/bookings/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (result.error === 1) {
+      alert("That time has already been reserved.");
+      await getBookings();
+      return;
+    }
+
+    firstNameInput.value = "";
+    await getBookings();
+  });
+
+  getBookings();
 </script>
 {% endblock %}

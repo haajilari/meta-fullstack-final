@@ -95,8 +95,7 @@
       `;
     }
 
-    bookingsContainer.innerHTML = bookingMarkup || "<p>No bookings for this date.</p>";
-
+    bookingsContainer.innerHTML = bookingMarkup || "<p>No Booking</p>";
     let slotOptions = '<option value="0" disabled selected>Select time</option>';
 
     for (let i = 10; i < 20; i += 1) {
@@ -142,6 +141,12 @@
 
     if (result.error === 1) {
       alert("That time has already been reserved.");
+      await getBookings();
+      return;
+    }
+
+    if (result.error === 2) {
+      alert("Invalid reservation time.");
       await getBookings();
       return;
     }

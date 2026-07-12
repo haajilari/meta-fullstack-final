@@ -3,19 +3,26 @@
   <article>
     <h1>All Reservations</h1>
 
-    {% if messages %} {% for message in messages %}
-    <p class="success-message">{{ message }}</p>
-    {% endfor %} {% endif %}
-
     <div class="row">
       <div class="column">
         {% if reservation_records %}
         <div class="reservation-list">
           {% for reservation in reservation_records %}
           <article class="reservation-record">
-            <p><strong>Guest:</strong> {{ reservation.first_name }}</p>
-            <p><strong>Date:</strong> {{ reservation.reservation_date|date:'Y-m-d' }}</p>
-            <p><strong>Time slot:</strong> {{ reservation.reservation_slot }}</p>
+            <p>
+              <strong>Guest:</strong>
+              {{ reservation.first_name }}
+            </p>
+
+            <p>
+              <strong>Date:</strong>
+              {{ reservation.reservation_date|date:"Y-m-d" }}
+            </p>
+
+            <p>
+              <strong>Time slot:</strong>
+              {{ reservation.reservation_slot }}
+            </p>
           </article>
           {% endfor %}
         </div>
@@ -45,14 +52,13 @@
   </article>
 </section>
 
-{{ bookings|json_script:"booking-data" }}
-
 <script>
-  const bookings = JSON.parse(document.getElementById("booking-data").textContent);
+  const bookings = JSON.parse("{{ bookings|escapejs }}");
 
   console.log(bookings);
 
   const prettyJson = JSON.stringify(bookings, null, 2);
+
   document.getElementById("bookings").textContent = prettyJson;
 </script>
 {% endblock %}

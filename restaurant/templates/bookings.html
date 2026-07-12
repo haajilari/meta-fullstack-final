@@ -2,15 +2,31 @@
 <section>
   <article>
     <h1>All Reservations</h1>
-    <!--Begin row-->
+
+    {% if messages %} {% for message in messages %}
+    <p class="success-message">{{ message }}</p>
+    {% endfor %} {% endif %}
+
     <div class="row">
-      <!--Begin col-->
       <div class="column">
+        {% if reservation_records %}
+        <div class="reservation-list">
+          {% for reservation in reservation_records %}
+          <article class="reservation-record">
+            <p><strong>Guest:</strong> {{ reservation.first_name }}</p>
+            <p><strong>Date:</strong> {{ reservation.reservation_date|date:'Y-m-d' }}</p>
+            <p><strong>Time slot:</strong> {{ reservation.reservation_slot }}</p>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p>No reservations have been added yet.</p>
+        {% endif %}
+
+        <h2>Serialized booking data</h2>
         <pre id="bookings"></pre>
       </div>
-      <!--End col-->
 
-      <!--Begin col-->
       <div class="column">
         <div class="videowrap">
           <iframe
@@ -18,24 +34,25 @@
             width="600"
             height="450"
             style="border: 0"
-            allowfullscreen=""
+            allowfullscreen
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
+            title="Little Lemon location map"
           ></iframe>
         </div>
       </div>
-      <!--End col-->
     </div>
-    <!--End row-->
   </article>
 </section>
 
-<!-- Add your code inside the script tags below  -->
+{{ bookings|json_script:"booking-data" }}
+
 <script>
-  const bookings = JSON.parse("{{ bookings|safe }}");
+  const bookings = JSON.parse(document.getElementById("booking-data").textContent);
+
   console.log(bookings);
 
-  const pretty_json = JSON.stringify(bookings, null, 2);
-  document.getElementById("bookings").textContent = pretty_json;
+  const prettyJson = JSON.stringify(bookings, null, 2);
+  document.getElementById("bookings").textContent = prettyJson;
 </script>
 {% endblock %}

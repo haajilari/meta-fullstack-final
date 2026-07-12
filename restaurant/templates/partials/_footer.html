@@ -1,0 +1,16 @@
+{% load static %}
+
+<footer class="site-footer">
+  <article>
+    <a href="{% url 'home' %}" aria-label="Little Lemon home">
+      <img
+        src="{% static 'img/logo_footer.png' %}"
+        alt="Little Lemon"
+      />
+    </a>
+  </article>
+
+  <article>
+    <p>&copy; {% now "Y" %} Little Lemon. All rights reserved.</p>
+  </article>
+</footer>
